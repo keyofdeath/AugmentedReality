@@ -1,173 +1,141 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from OpenGL.GL import *
-from OpenGL.GLUT import *
-from OpenGL.GLU import *
 import cv2
-from PIL import Image
-import numpy as np
 
 from RobotCard import *
+from ImgOperator.Tool import get_4_point_contour
+from ImgOperator.Trasformations.VisionTool import *
+import ImgOperator as io
 
 
 class RobotCard(object):
 
     def __init__(self):
 
-        self.cam = WebCam()
-        self.texture_background = None
+        self.cam = WebCam(True)
+        cv2.namedWindow("Main")
 
-        self.rtri = 0.0
-        self.rquad = 2.0
-        self.speed = 0.1
-        self.cube_pos = [0, 0]
+        self.longeur = 1
+        self.largeur = 1
+        self.hauteur = 1
 
-    def __init_gl(self):
+        self.vertices = [
+            # Plan arrière x, y, z
+            Point3D(-self.longeur, self.hauteur, -self.largeur),
+            Point3D(self.longeur, self.hauteur, -self.largeur),
+            Point3D(self.longeur, -self.hauteur, -self.largeur),
+            Point3D(-self.longeur, -self.hauteur, -self.largeur),
+            # Plan avent
+            Point3D(-self.longeur, self.hauteur, self.largeur),
+            Point3D(self.longeur, self.hauteur, self.largeur),
+            Point3D(self.longeur, -self.hauteur, self.largeur),
+            Point3D(-self.longeur, -self.hauteur, self.largeur)
+        ]
 
-        glClearColor(0.0, 0.0, 0.0, 0.0)
-        glClearDepth(1.0)
-        glDepthFunc(GL_LESS)
-        glEnable(GL_DEPTH_TEST)
-        glShadeModel(GL_SMOOTH)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(33.7, 1.3, 0.1, 100.0)
-        glMatrixMode(GL_MODELVIEW)
+        # Define the vertices that compose each of the 6 faces. These numbers are
+        # indices to the vertices list defined above.
+        self.faces = [(0, 1, 2, 3), (1, 5, 6, 2), (5, 4, 7, 6), (4, 0, 3, 7), (0, 4, 5, 1), (3, 2, 6, 7)]
+
+        self.angleX, self.angleY, self.angleZ = 0, 0, 0
+        self.height, self.width, _ = self.cam.get_current_fram().shape
+        self.pos_x, self.pos_y = self.width / 2, self.height / 2
+
+    def test_cube(self):
 
         self.cam.start()
-        glEnable(GL_TEXTURE_2D)
 
-        # self.texture_background = glGenTextures(1)
+        step_x = -2
+        step_y = 2
 
-    def __draw_scene(self):
-        """
+        while True:
 
-        :return:
-        """
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()
+            img = self.cam.get_current_fram()
+            # Will hold transformed vertices.
+            t = []
 
-        img = self.cam.get_current_fram()
-        self.__handle_background(img.copy())
-        self.__handle_markers(img.copy())
-        glutSwapBuffers()
+            for v in self.vertices:
+                # Rotate the point around X axis, then around Y axis, and finally around Z axis.
+                r = v.rotateX(self.angleX).rotateY(self.angleY).rotateZ(self.angleZ)
+                # Transform the point from 3D to 2D
+                p = r.project(self.pos_x, self.pos_y, 100, 4)
+                # Put the point in the list of transformed vertices
+                t.append(p)
 
-    def __handle_background(self, image):
-        """
+            for f in self.faces:
+                cv2.line(img, (int(t[f[0]].x), int(t[f[0]].y)), (int(t[f[1]].x), int(t[f[1]].y)), (255, 255, 255))
+                cv2.line(img, (int(t[f[1]].x), int(t[f[1]].y)), (int(t[f[2]].x), int(t[f[2]].y)), (255, 255, 255))
+                cv2.line(img, (int(t[f[2]].x), int(t[f[2]].y)), (int(t[f[3]].x), int(t[f[3]].y)), (255, 255, 255))
+                cv2.line(img, (int(t[f[3]].x), int(t[f[3]].y)), (int(t[f[0]].x), int(t[f[0]].y)), (255, 255, 255))
 
-        :param image:
-        :return:
-        """
-        # convert image to OpenGL texture format
-        bg_image = cv2.flip(image, 0)
-        bg_image = Image.fromarray(bg_image)
-        ix = bg_image.size[0]
-        iy = bg_image.size[1]
-        bg_image = bg_image.tobytes('raw', 'BGRX', 0, -1)
+            self.angleX += 0.5
+            self.angleY += 1
+            self.angleZ += 1.5
 
-        # create background texture
-        # glBindTexture(GL_TEXTURE_2D, self.texture_background)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
-        glTexImage2D(GL_TEXTURE_2D, 0, 3, ix, iy, 0, GL_RGBA, GL_UNSIGNED_BYTE, bg_image)
+            self.pos_x += step_x
+            self.pos_y += step_y
 
-        # draw background
-        # glBindTexture(GL_TEXTURE_2D, self.texture_background)
-        glPushMatrix()
-        glTranslatef(0.0, 0.0, -10.0)
-        glBegin(GL_QUADS)
-        glTexCoord2f(0.0, 1.0)
-        glVertex3f(-4.0, -3.0, 0.0)
-        glTexCoord2f(1.0, 1.0)
-        glVertex3f(4.0, -3.0, 0.0)
-        glTexCoord2f(1.0, 0.0)
-        glVertex3f(4.0, 3.0, 0.0)
-        glTexCoord2f(0.0, 0.0)
-        glVertex3f(-4.0, 3.0, 0.0)
+            if self.pos_y >= self.height:
+                step_y = -step_y
+            elif self.pos_y <= 0:
+                step_y = abs(step_y)
 
-        glEnd()
-        glPopMatrix()
+            if self.pos_x >= self.width:
+                step_x = -step_x
+            elif self.pos_x <= 0:
+                step_x = abs(step_x)
 
-    def __handle_markers(self, image):
-        """
+            cv2.imshow("Main", img)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-        :param image:
-        :return:
-        """
-        glTranslatef(self.cube_pos[0], self.cube_pos[1], -10)
-        glScaled(0.1, 0.1, -0.1)
-        glRotatef(self.rquad, self.speed, self.speed, self.speed)
-        glBegin(GL_QUADS)
-
-        glColor3f(0.0, 1.0, 0.0)
-        glVertex3f(1.0, 1.0, -1.0)
-        glVertex3f(-1.0, 1.0, -1.0)
-        glVertex3f(-1.0, 1.0, 1.0)
-        glVertex3f(1.0, 1.0, 1.0)
-
-        glColor3f(1.0, 0.5, 0.0)
-        glVertex3f(1.0, -1.0, 1.0)
-        glVertex3f(-1.0, -1.0, 1.0)
-        glVertex3f(-1.0, -1.0, -1.0)
-        glVertex3f(1.0, -1.0, -1.0)
-
-        glColor3f(1.0, 0.0, 0.0)
-        glVertex3f(1.0, 1.0, 1.0)
-        glVertex3f(-1.0, 1.0, 1.0)
-        glVertex3f(-1.0, -1.0, 1.0)
-        glVertex3f(1.0, -1.0, 1.0)
-
-        glColor3f(1.0, 1.0, 0.0)
-        glVertex3f(1.0, -1.0, -1.0)
-        glVertex3f(-1.0, -1.0, -1.0)
-        glVertex3f(-1.0, 1.0, -1.0)
-        glVertex3f(1.0, 1.0, -1.0)
-
-        glColor3f(0.0, 0.0, 1.0)
-        glVertex3f(-1.0, 1.0, 1.0)
-        glVertex3f(-1.0, 1.0, -1.0)
-        glVertex3f(-1.0, -1.0, -1.0)
-        glVertex3f(-1.0, -1.0, 1.0)
-
-        glColor3f(1.0, 1.0, 1.0)
-        glVertex3f(1.0, 1.0, -1.0)
-        glVertex3f(1.0, 1.0, 1.0)
-        glVertex3f(1.0, -1.0, 1.0)
-        glVertex3f(1.0, -1.0, -1.0)
-        glEnd()
-
-        self.rtri += 1
-        self.rquad -= 2
-
-        self.cube_pos[0] = (self.cube_pos[0] + 0.01) % 5
-        self.cube_pos[1] = (self.cube_pos[1] + 0.01) % 5
-
-    def __key_pressed(self, *args):
-        """
-
-        :param args:
-        :return:
-        """
-        print(args)
-        if args[0] == b"\x1b":
-            print("stop")
-            self.cam.stop()
-            exit()
+        self.cam.stop()
 
     def start(self):
 
-        glutInit()
-        glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
-        glutInitWindowSize(640, 480)
-        glutInitWindowPosition(100, 100)
-        glutCreateWindow(b'Robot card')
-        glutDisplayFunc(self.__draw_scene)
-        glutIdleFunc(self.__draw_scene)
-        glutKeyboardFunc(self.__key_pressed)
-        self.__init_gl()
-        glutMainLoop()
-        print("end")
+        while True:
+            img = self.cam.get_current_fram()
+            screenCnt = get_4_point_contour(img)
+
+            if screenCnt is not None:
+                t = []
+                height, width, _ = img.shape
+                for v in self.vertices:
+                    # Transform the point from 3D to 2D
+                    p = v.project(width / 2, height / 2, 100, 2)
+                    # Put the point in the list of transformed vertices
+                    t.append(p)
+
+                s = 3
+                cube_point = [[int(t[self.faces[s][0]].x), int(t[self.faces[s][0]].y)],
+                              [int(t[self.faces[s][1]].x), int(t[self.faces[s][1]].y)],
+                              [int(t[self.faces[s][2]].x), int(t[self.faces[s][2]].y)],
+                              [int(t[self.faces[s][3]].x), int(t[self.faces[s][3]].y)]]
+
+                mat_dlt = dlt(2, [[0, 0], [width, 0], [0, height], [width, height]], screenCnt)
+
+                for f in self.faces:
+                    p1 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[0]].x), int(t[f[0]].y)))
+                    p2 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[1]].x), int(t[f[1]].y)))
+                    cv2.line(img, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), (0, 255, 255))
+
+                    p1 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[1]].x), int(t[f[1]].y)))
+                    p2 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[2]].x), int(t[f[2]].y)))
+                    cv2.line(img, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), (255, 255, 255))
+
+                    p1 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[2]].x), int(t[f[2]].y)))
+                    p2 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[3]].x), int(t[f[3]].y)))
+                    cv2.line(img, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), (255, 255, 255))
+
+                    p1 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[3]].x), int(t[f[3]].y)))
+                    p2 = dlt_reconstruction(2, 1, mat_dlt, (int(t[f[0]].x), int(t[f[0]].y)))
+                    cv2.line(img, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), (255, 255, 255))
+
+            cv2.imshow("Main", img)
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
         self.cam.stop()
 
 

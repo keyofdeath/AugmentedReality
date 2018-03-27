@@ -5,4 +5,4 @@ from RobotCard import *
 
 if __name__ == "__main__":
     robotCard = RobotCard()
-    robotCard.start()
+    robotCard.test_cube()

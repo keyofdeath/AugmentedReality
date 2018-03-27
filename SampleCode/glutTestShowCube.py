@@ -86,8 +86,8 @@ def DrawGLScene():
     glVertex3f(1.0, -1.0, 1.0)
     glVertex3f(1.0, -1.0, -1.0)
     glEnd()
-    rtri = rtri + 0.2
-    rquad = rquad - 0.15
+    rtri = rtri + 1
+    rquad = rquad - 2
     glutSwapBuffers()
 
 

@@ -4,11 +4,14 @@ from threading import Thread
 
 import cv2
 import numpy as np
+import imutils
 
 
 class WebCam:
 
-    def __init__(self, cam_activ=False, img_path=None, height=600, width=500):
+    def __init__(self, cam_activ=False, img_path=None, width=1024, height=768):
+        self.height = height
+        self.width = width
         if cam_activ:
             self.cam = cv2.VideoCapture(1)
             self.current_frame = self.cam.read()[1]
@@ -29,7 +32,7 @@ class WebCam:
             self.current_frame = self.cam.read()[1]
 
     def get_current_fram(self):
-        return self.current_frame.copy()
+        return imutils.resize(self.current_frame, width=self.width, height=self.height)
 
     def stop(self):
         self.end_app = True

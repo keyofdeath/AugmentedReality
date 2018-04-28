@@ -23,33 +23,25 @@ class Traking:
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # on recupaire la zone qui on les zone de couleur
         mask = cv2.inRange(hsv, self.greenLower, self.greenUpper)
-        # on fait une erosion
+        # on fait une erosion et dilation pour supprimer les petit pixel blanc qui peut être pris pour la balle
         mask = cv2.erode(mask, None, iterations=2)
-        # est dilatation
         mask = cv2.dilate(mask, None, iterations=2)
 
-        # find contours in the mask and initialize the current
-        # (x, y) center of the ball
+        # Recherche de contour pour savoir ou est la balle
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
         center = None
-
-        # only proceed if at least one contour was found
         if len(cnts) > 0:
-            # find the largest contour in the mask, then use
-            # it to compute the minimum enclosing circle and
-            # centroid
+            # on charche le contour le plus grand (celui de la balle)
             c = max(cnts, key=cv2.contourArea)
             ((x, y), radius) = cv2.minEnclosingCircle(c)
             moment_cont = cv2.moments(c)
+            # on recupaire le centre de la balle
             center = (int(moment_cont["m10"] / moment_cont["m00"]), int(moment_cont["m01"] / moment_cont["m00"]))
-
-            # only proceed if the radius meets a minimum size
-            if radius > 10:
-                # draw the circle and centroid on the frame,
-                # then update the list of tracked points
+            # on controle la taille du rayon de la balle
+            if radius > 30:
+                # Puis on dessin la boulle
                 cv2.circle(frame, (int(x), int(y)), int(radius), (0, 255, 255), 2)
                 cv2.circle(frame, center, 5, (0, 0, 255), -1)
-        # update the points queue
         return center, frame
 
 

@@ -3,11 +3,13 @@
 
 import cv2
 import pymunk
+from time import time
 from pymunk import Vec2d
-from BouncingCube.Traking import Traking
-from BouncingCube.Webcam import WebCam
 from random import randint
 from collections import deque
+
+from BouncingCube.Traking import Traking
+from BouncingCube.Webcam import WebCam
 
 
 class BouncingCube(object):
@@ -65,10 +67,11 @@ class BouncingCube(object):
         self.space.add(body, shape)
         return shape
 
-    def draw_point(self, img):
+    def draw_point(self, img, color):
         """
         Dessine la liste des point dans l'image donnée
         :param img:
+        :param color:
         :return:
         """
 
@@ -78,7 +81,7 @@ class BouncingCube(object):
             # them
             if self.point_que[i - 1] is None or self.point_que[i] is None:
                 continue
-            cv2.line(img, self.point_que[i - 1], self.point_que[i], (0, 0, 255), 10)
+            cv2.line(img, self.point_que[i - 1], self.point_que[i], color, 10)
         return img
 
     def start(self):
@@ -91,6 +94,7 @@ class BouncingCube(object):
 
         balls = []
         point_num = 0
+        color_trai = (0, 0, 255)
 
         while True:
 
@@ -143,7 +147,7 @@ class BouncingCube(object):
                     cv2.circle(img_out, p, int(r), (0, 255, 255), 2)
 
             # on affiche l'image
-            cv2.imshow("Main", self.draw_point(img_out))
+            cv2.imshow("Main", self.draw_point(img_out, color_trai))
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cv2.destroyAllWindows()
                 break

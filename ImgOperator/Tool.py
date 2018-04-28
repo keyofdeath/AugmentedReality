@@ -98,13 +98,35 @@ def get_4_point_contour(img):
             rect[3] = pts[np.argmax(s)]
             # on calcule la difference entre chaque position
             diff = np.diff(pts, axis=1)
-            # La position haut gauche aura la plus petit diférence
+            # La position haut droit aura la plus petit diférence
             rect[1] = pts[np.argmin(diff)]
             # La position bas gauche aura la plus grande différence
             rect[2] = pts[np.argmax(diff)]
-            return rect
+            height = int(max(abs(rect[0][1] - rect[2][1]), abs(rect[1][1] - rect[3][1])))
+            width = int(max(abs(rect[0][0] - rect[1][0]), abs(rect[2][0] - rect[3][0])))
 
-    return None
+            return rect, height, width
+
+    return None, None, None
+
+
+def resize_and_threshold_warped(image):
+    # Resize the corrected image to proper size & convert it to grayscale
+    # warped_new =  cv2.resize(image,(w/2, h/2))
+    warped_new_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Smoothing Out Image
+    blur = cv2.GaussianBlur(warped_new_gray, (5, 5), 0)
+
+    # Calculate the maximum pixel and minimum pixel value & compute threshold
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(blur)
+    threshold = (min_val + max_val) / 2
+
+    # Threshold the image
+    ret, warped_processed = cv2.threshold(warped_new_gray, threshold, 255, cv2.THRESH_BINARY)
+
+    # return the thresholded image
+    return warped_processed
 
 
 if __name__ == "__main__":

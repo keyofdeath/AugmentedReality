@@ -4,5 +4,6 @@
 from BouncingCube.Webcam import WebCam
 from BouncingCube.BouncingCube import BouncingCube
 
+
 if __name__ == "__main__":
     pass

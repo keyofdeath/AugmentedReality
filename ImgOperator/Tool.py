@@ -77,6 +77,7 @@ def get_4_point_contour(img):
     cntr_frame, contours, hierarchy = cv2.findContours(edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
     sigma = 0.03
+
     # loop over our contours
     for c in cnts:
         # approximate the contour

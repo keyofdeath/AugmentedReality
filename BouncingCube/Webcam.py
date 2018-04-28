@@ -9,11 +9,11 @@ import imutils
 
 class WebCam:
 
-    def __init__(self, cam_activ=False, img_path=None, width=1024, height=768):
+    def __init__(self, cam_src, cam_activ=False, img_path=None, width=1024, height=768):
         self.height = height
         self.width = width
         if cam_activ:
-            self.cam = cv2.VideoCapture(1)
+            self.cam = cv2.VideoCapture(cam_src)
             self.current_frame = self.cam.read()[1]
             self.end_app = False
         elif img_path is None:

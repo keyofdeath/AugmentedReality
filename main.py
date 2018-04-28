@@ -4,5 +4,5 @@
 from BouncingCube import *
 
 if __name__ == "__main__":
-    robotCard = BouncingCube(cam=WebCam(cam_activ=False))
+    robotCard = BouncingCube(cam=WebCam(0, cam_activ=True))
     robotCard.start()

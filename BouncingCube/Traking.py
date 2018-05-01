@@ -14,7 +14,7 @@ class Traking:
         self.greenLower = color_hsv_low
         self.greenUpper = color_hsv_hight
 
-    def tick(self):
+    def tick(self, iteration):
         """
         Ajoute la position de l'objet tracket dans point_que
         :return:
@@ -24,8 +24,10 @@ class Traking:
         # on recupaire la zone qui on les zone de couleur
         mask = cv2.inRange(hsv, self.greenLower, self.greenUpper)
         # on fait une erosion et dilation pour supprimer les petit pixel blanc qui peut être pris pour la balle
-        mask = cv2.erode(mask, None, iterations=2)
-        mask = cv2.dilate(mask, None, iterations=2)
+        mask = cv2.erode(mask, None, iterations=iteration)
+        mask = cv2.dilate(mask, None, iterations=iteration)
+
+        cv2.imshow("mask", mask)
 
         # Recherche de contour pour savoir ou est la balle
         cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]

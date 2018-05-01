@@ -12,6 +12,10 @@ from BouncingCube.Traking import Traking
 from BouncingCube.Webcam import WebCam
 
 
+def nothing(x):
+    pass
+
+
 class BouncingCube(object):
 
     MASS = 1
@@ -28,10 +32,12 @@ class BouncingCube(object):
         :param buffer: Taille du buffer (plus le buffer est grand plus les ligne resteron sur l'écrant)
         """
 
-        self.cam = WebCam(True, None, height, width) if cam is None else cam
+        self.cam = WebCam(0, True, None, height, width) if cam is None else cam
         self.traking = Traking(self.cam)
         cv2.namedWindow("Main")
         cv2.moveWindow("Main", 0, 0)
+        cv2.namedWindow("Main")
+        cv2.createTrackbar('iterations', 'Main', 2, 40, nothing)
         self.width = width
         self.height = height
 
@@ -103,7 +109,7 @@ class BouncingCube(object):
             balls.append(ball_shape)
 
             # on track la balle
-            center, img_out = self.traking.tick()
+            center, img_out = self.traking.tick(cv2.getTrackbarPos('iterations', 'Main'))
             # Si on a decter la balle
             if center is not None:
                 point_num += 1

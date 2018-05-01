@@ -65,9 +65,9 @@ def get_all_pix_between_2_point(point_a, point_b, axe):
 
 def get_4_point_contour(img):
     """
-
+    Renvoie les 4 coint de la carte qui dans l'image donnée
     :param img:
-    :return:
+    :return: 4 coint de la carte
     """
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -77,7 +77,6 @@ def get_4_point_contour(img):
     cntr_frame, contours, hierarchy = cv2.findContours(edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
     sigma = 0.03
-
     # loop over our contours
     for c in cnts:
         # approximate the contour
@@ -102,31 +101,9 @@ def get_4_point_contour(img):
             rect[1] = pts[np.argmin(diff)]
             # La position bas gauche aura la plus grande différence
             rect[2] = pts[np.argmax(diff)]
-            height = int(max(abs(rect[0][1] - rect[2][1]), abs(rect[1][1] - rect[3][1])))
-            width = int(max(abs(rect[0][0] - rect[1][0]), abs(rect[2][0] - rect[3][0])))
+            return rect
 
-            return rect, height, width
-
-    return None, None, None
-
-
-def resize_and_threshold_warped(image):
-    # Resize the corrected image to proper size & convert it to grayscale
-    # warped_new =  cv2.resize(image,(w/2, h/2))
-    warped_new_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Smoothing Out Image
-    blur = cv2.GaussianBlur(warped_new_gray, (5, 5), 0)
-
-    # Calculate the maximum pixel and minimum pixel value & compute threshold
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(blur)
-    threshold = (min_val + max_val) / 2
-
-    # Threshold the image
-    ret, warped_processed = cv2.threshold(warped_new_gray, threshold, 255, cv2.THRESH_BINARY)
-
-    # return the thresholded image
-    return warped_processed
+    return None
 
 
 if __name__ == "__main__":
